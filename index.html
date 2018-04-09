@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Train Schedule!</title>
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <br>
+    <div class="jumbotron">
+      <h1 class="text-center">Train Schedule!</h1>
+    </div>
+
+   <div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Train Name</th>
+          <th>Destination</th>
+          <th>Frequency</th>
+          <th>Next Arrival</th>
+          <th>Minutes Away</th>
+        </tr>
+      </thead>
+      <tbody id="schedule-table">
+        
+      </tbody>
+    </table>
+  </div>
+
+
+    <div class="row">
+      <!-- Sign-Up Panel-->
+      <div class="col-lg-6">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Add Train</h3>
+          </div>
+          <div class="panel-body">
+            <!-- Sign-up Form (note the various input "types")-->
+            <form role="form">
+              <div class="form-group">
+                <label for="name-input">Train Name:</label>
+                <input class="form-control" id="name-input" type="text">
+              </div>
+              <div class="form-group">
+                <label for="destination-input">Destination:</label>
+                <input class="form-control" id="destination-input" type="text">
+              </div>
+              <div class="form-group">
+                <label for="time-input">First Train Time:</label>
+                <input class="form-control" id="time-input" type="text">
+              </div>
+              <div class="form-group">
+                <label for="frequency-input">Frequency(min):</label>
+                <input class="form-control" id="frequency-input" ></input>
+              </div>
+              <button class="btn btn-default" id="add-train" type="submit">Submit</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <!-- Most Recent Member Panel -->
+ 
+    </div>
+  </div>
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery.js"></script>
+  <!-- LINK TO FIREBASE GOES HERE -->
+  <script src="https://www.gstatic.com/firebasejs/live/3.0/firebase.js"></script>
+  <!-- Script -->
+  <script>
+    // START CODING BELOW!!
+    // Initialize Firebase
+    var config = {
+      apiKey: "AIzaSyA5eYKsB8T2q6rMGdKSvac6eQsWTzsZEjE",
+      authDomain: "fir-recent-user.firebaseapp.com",
+      databaseURL: "https://fir-recent-user.firebaseio.com",
+      storageBucket: "fir-recent-user.appspot.com"
+    };
+    firebase.initializeApp(config);
+    // Create a variable to reference the database
+    var database = firebase.database();
+    // Initial Values
+    var name = "";
+    var destination = "";
+    var time = moment().format('LT'); 
+    var frequency = "";
+    // Capture Button Click
+
+    var formatLT = moment().format('LT'); 
+    var formatMil = moment().format('HH:mm-military time');
+
+    function writeSchedule() {
+        var trainList = database.ref("train-list");
+        $("#schedule-table").html("");
+        trainList.once("value")
+          .then(function(snapshot) {
+            var list = snapshot.val();
+            for (var kk in list) {
+              var trTag =  $("#schedule-table").append("<tr>");
+              var obj = list[kk];
+              var name = obj.name;
+              trTag.append("<td>" + name + "</td>");
+              var dest =  obj.destination;
+              trTag.append("<td>" + dest + "</td>");
+              var freq = obj.frequency;
+              trTag.append("<td>" + freq + "</td>");
+              var time = obj.time;
+              trTag.append("<td>" + getNextArrivalTime(freq,time) + "</td>");       
+              var minArr = 13;
+              trTag.append("<td>" + getTimeInterval(freq,time) + "</td>");
+            }
+          });
+    }
+
+    function _getNextArrivalTime (freq,time) {
+      var currentTime = moment();
+      var trainTime = moment(time,"HH:mm");
+  
+      for (; trainTime<currentTime ; ) {
+        trainTime.add(freq,"minutes");
+      }
+      return trainTime;
+    }
+
+
+    function getNextArrivalTime (freq,time) {   
+      return _getNextArrivalTime(freq,time).format("hh:mm a");
+    }
+
+    function getTimeInterval(freq,time) {
+      var currentTime = moment();
+      var nextArrivalTime = _getNextArrivalTime(freq,time);
+      var intv = nextArrivalTime.diff(currentTime, 'minutes');
+      console.log(intv);
+      return intv ;
+    }
+
+     var trainList = database.ref("train-list");
+
+    $("#add-train").on("click", function() {
+      // Don't refresh the page!
+      event.preventDefault();
+      // YOUR TASK!!!
+      // Code in the logic for storing and retrieving the most recent user.
+      // Don't forget to provide initial data to your Firebase database.
+      name = $("#name-input").val().trim();
+      destination = $("#destination-input").val().trim();
+      time = $("#time-input").val().trim();
+      frequency = $("#frequency-input").val().trim();
+      var scheduleItem = trainList.push();
+      scheduleItem.set({
+        name: name,
+        destination: destination,
+        time: time,
+        frequency: frequency
+      });
+
+      writeSchedule();
+    });
+
+    writeSchedule();
+
+    // Firebase watcher + initial loader HINT: .on("value")
+    database.ref().on("value", function(snapshot) {
+      // Log everything that's coming out of snapshot
+      return;
+      console.log(snapshot.val());
+      console.log(snapshot.val().name);
+      console.log(snapshot.val().destination);
+      console.log(snapshot.val().time);
+      console.log(snapshot.val().frequency);
+      // Change the HTML to reflect
+ 
+      // Handle the errors
+    }, function(errorObject) {
+      console.log("Errors handled: " + errorObject.code);
+    });
+
+    //setInterval(writeSchedule,500);
+    //writeSchedule();
+
+  </script>
+</body>
+</html>
